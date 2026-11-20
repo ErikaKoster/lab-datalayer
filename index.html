@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lab de dataLayer</title>
+
+<!--
+  PASSO 1: o dataLayer nasce AQUI, antes de qualquer outra coisa.
+  É só um array de JavaScript. Nada de mágico.
+  Ele precisa existir antes do GTM carregar, senão os eventos
+  disparados cedo demais se perdem.
+-->
+<script>
+  window.dataLayer = window.dataLayer || [];
+</script>
+
+<!--
+  PASSO 2: o snippet do GTM.
+  Troque GTM-MBDZ3SDN pelo ID do SEU container (duas vezes no arquivo:
+  aqui e no <noscript> lá embaixo).
+-->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-MBDZ3SDN');</script>
+
+<style>
+  body{font-family:system-ui,-apple-system,sans-serif;max-width:720px;
+       margin:40px auto;padding:0 20px;line-height:1.6;color:#1a1a1a}
+  h1{font-size:1.5rem;margin-bottom:.25rem}
+  p.sub{color:#666;margin-top:0}
+  button{display:block;width:100%;margin:12px 0;padding:14px 18px;
+         font-size:1rem;border:1px solid #1a1a1a;background:#fff;
+         border-radius:6px;cursor:pointer;text-align:left}
+  button:hover{background:#1a1a1a;color:#fff}
+  #log{margin-top:28px;padding:16px;background:#f5f5f5;border-radius:6px;
+       font-family:ui-monospace,monospace;font-size:.8rem;white-space:pre-wrap;
+       min-height:80px;color:#333}
+  .hint{color:#666;font-size:.85rem}
+</style>
+</head>
+<body>
+
+<!-- noscript do GTM: troque o ID aqui também -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-MBDZ3SDN"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+
+<h1>Lab de dataLayer</h1>
+<p class="sub">Página de teste. Cada botão empurra um evento para o dataLayer.</p>
+
+<button id="btn-lead">Pedir contato &rarr; dispara <code>generate_lead</code></button>
+<button id="btn-video">Dar play no vídeo &rarr; dispara <code>video_start</code></button>
+<button id="btn-erro">Evento sem parâmetro &rarr; dispara <code>evento_pelado</code></button>
+
+<p class="hint">Abra o Preview do GTM apontando para esta URL e clique nos botões.
+O que aparece abaixo é exatamente o que o GTM está enxergando.</p>
+
+<div id="log">Nada empurrado ainda.</div>
+
+<script>
+  var log = document.getElementById('log');
+
+  // Função auxiliar: empurra no dataLayer e mostra na tela
+  function empurrar(obj){
+    window.dataLayer.push(obj);
+    log.textContent = 'dataLayer.push(\n' +
+      JSON.stringify(obj, null, 2) + '\n)\n\n' +
+      'Total de itens no dataLayer agora: ' + window.dataLayer.length;
+    console.log('[lab] push:', obj);
+  }
+
+  // PASSO 3: os eventos.
+  // 'event' é a chave especial: é ela que o GTM escuta num
+  // gatilho do tipo Custom Event. As outras chaves são
+  // parâmetros, e viram Data Layer Variables no GTM.
+
+  document.getElementById('btn-lead').onclick = function(){
+    empurrar({
+      event: 'generate_lead',
+      form_name: 'contato_rodape',
+      lead_value: 120,
+      currency: 'BRL'
+    });
+  };
+
+  document.getElementById('btn-video').onclick = function(){
+    empurrar({
+      event: 'video_start',
+      video_title: 'case_creatoros',
+      video_duration: 95,
+      creator_tier: 'macro'
+    });
+  };
+
+  // Este existe de propósito: um evento sem nenhum parâmetro.
+  // Repare depois, no GA4, o quanto ele é inútil.
+  document.getElementById('btn-erro').onclick = function(){
+    empurrar({ event: 'evento_pelado' });
+  };
+</script>
+
+</body>
+</html>
