@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lab 2 — ecommerce e dataLayer aninhado</title>
+
+<script>
+  window.dataLayer = window.dataLayer || [];
+</script>
+
+<!-- GTM -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-MBDZ3SDN');</script>
+
+<style>
+  body{font-family:system-ui,-apple-system,sans-serif;max-width:760px;
+       margin:40px auto;padding:0 20px;line-height:1.6;color:#1a1a1a}
+  h1{font-size:1.5rem;margin-bottom:.25rem}
+  h2{font-size:1rem;margin:28px 0 8px;color:#444}
+  p.sub{color:#666;margin-top:0}
+  .card{border:1px solid #ddd;border-radius:8px;padding:16px;margin:12px 0}
+  .card h3{margin:0 0 4px;font-size:1rem}
+  .card .meta{color:#666;font-size:.85rem;margin-bottom:12px}
+  button{padding:10px 16px;font-size:.95rem;border:1px solid #1a1a1a;
+         background:#fff;border-radius:6px;cursor:pointer}
+  button:hover{background:#1a1a1a;color:#fff}
+  .checkout{width:100%;margin:16px 0;padding:14px;font-weight:600}
+  a.catalogo{display:inline-block;margin:8px 0;color:#0b57d0}
+  #log{margin-top:28px;padding:16px;background:#f5f5f5;border-radius:6px;
+       font-family:ui-monospace,monospace;font-size:.78rem;white-space:pre-wrap;
+       min-height:100px;color:#333}
+  .hint{color:#666;font-size:.85rem}
+</style>
+</head>
+<body>
+
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-MBDZ3SDN"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+
+<h1>Lab 2 &mdash; ecommerce e dataLayer aninhado</h1>
+<p class="sub">Loja de mentira. Cada ação empurra um evento no formato de ecommerce do GA4.</p>
+
+<h2>Produtos</h2>
+
+<div class="card">
+  <h3>Caderno Faber A5</h3>
+  <div class="meta">SKU FC-A5-001 &middot; Papelaria &middot; R$ 39,90</div>
+  <button class="add" data-id="FC-A5-001" data-nome="Caderno Faber A5"
+          data-preco="39.90" data-cat="Papelaria">Adicionar ao carrinho</button>
+</div>
+
+<div class="card">
+  <h3>Caneta Nanquim 0.5</h3>
+  <div class="meta">SKU FC-NK-050 &middot; Escrita &middot; R$ 18,50</div>
+  <button class="add" data-id="FC-NK-050" data-nome="Caneta Nanquim 0.5"
+          data-preco="18.50" data-cat="Escrita">Adicionar ao carrinho</button>
+</div>
+
+<h2>Carrinho</h2>
+<p class="hint" id="resumo">Carrinho vazio.</p>
+<button class="checkout" id="comprar">Finalizar compra</button>
+
+<h2>Sem dataLayer, de proposito</h2>
+<p class="hint">Este link nao empurra nada. Voce vai medi-lo com gatilho de clique nativo,
+para comparar com o resto.</p>
+<a class="catalogo" id="link-catalogo" href="#catalogo">Baixar o catalogo em PDF</a>
+
+<div id="log">Nada empurrado ainda.</div>
+
+<script>
+  var log = document.getElementById('log');
+  var resumo = document.getElementById('resumo');
+  var carrinho = [];
+
+  function empurrar(obj){
+    window.dataLayer.push(obj);
+    log.textContent = 'dataLayer.push(\n' + JSON.stringify(obj, null, 2) + '\n)';
+    console.log('[lab2] push:', obj);
+  }
+
+  // ADD TO CART
+  // Repare na estrutura: o evento tem um objeto ecommerce dentro,
+  // e dentro dele uma LISTA chamada items. Dado dentro de dado.
+  document.querySelectorAll('.add').forEach(function(btn){
+    btn.onclick = function(){
+      var item = {
+        item_id: btn.dataset.id,
+        item_name: btn.dataset.nome,
+        item_category: btn.dataset.cat,
+        price: parseFloat(btn.dataset.preco),
+        quantity: 1
+      };
+      carrinho.push(item);
+      resumo.textContent = carrinho.length + ' item(ns) no carrinho. Total R$ ' +
+        carrinho.reduce(function(s,i){ return s + i.price; }, 0).toFixed(2);
+
+      empurrar({
+        event: 'add_to_cart',
+        ecommerce: {
+          currency: 'BRL',
+          value: item.price,
+          items: [ item ]
+        }
+      });
+    };
+  });
+
+  // PURCHASE
+  // Mesma forma, mas com varios itens na lista e dados da transacao.
+  document.getElementById('comprar').onclick = function(){
+    if(carrinho.length === 0){
+      log.textContent = 'Carrinho vazio. Adicione um produto antes.';
+      return;
+    }
+    var total = carrinho.reduce(function(s,i){ return s + i.price; }, 0);
+
+    empurrar({
+      event: 'purchase',
+      ecommerce: {
+        transaction_id: 'T-' + Date.now(),
+        currency: 'BRL',
+        value: parseFloat(total.toFixed(2)),
+        shipping: 9.90,
+        items: carrinho.slice()
+      },
+      metodo_pagamento: 'pix'
+    });
+
+    carrinho = [];
+    resumo.textContent = 'Carrinho vazio.';
+  };
+
+  // O link do catalogo nao tem onclick nenhum, de proposito.
+</script>
+
+</body>
+</html>
